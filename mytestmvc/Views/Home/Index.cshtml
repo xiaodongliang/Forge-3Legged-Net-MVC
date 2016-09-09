@@ -1,0 +1,134 @@
+﻿@model mytestmvc.Models.MyModels 
+
+<script type="text/javascript" src="../Scripts/jquery-1.10.2.min.js"></script>
+@using (Html.BeginForm())
+{
+<div>  
+    <p>
+        <input type="button" id="btnAuthorize" value="ForgeAuthorize" onclick="ForgeAuthorize()" style="border-radius: 10px;background-color:cyan" />
+    </p> 
+
+    <p>
+        <input type="button" value="GetToken" onclick="Get3LeggedToken()" style="border-radius: 10px;background-color:cyan" />
+    </p> 
+
+    <p>
+        <input type="text" id="validuser" value="please login" style="border-radius: 10px;background-color:cyan" />
+    </p> 
+
+    <p>
+        <input type="button"  id="btncando" value="CanDo" disabled ="disabled" style="border-radius: 10px;background-color:cyan" />
+    </p> 
+    
+</div>
+}
+
+
+<script>
+
+function checkvaliduser()
+{
+        
+    xmlhttp = new XMLHttpRequest();
+    xmlhttp.open('GET', '/Home/checkuservalid', true);
+    xmlhttp.onreadystatechange = function () {
+        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            // From the response string, get the progress.
+            var response = xmlhttp.responseText;
+
+            //alert(response);
+            var jsonObj1 = eval('(' + response + ')');;
+
+            if (jsonObj1.currentuservalid) {
+                $('#btncando').removeAttr("disabled");
+                $('#validuser').val(jsonObj1.currentuseremail);
+            }
+            else {
+                var auth = $("#btnAuthorize");
+
+
+                $('#btncando').attr('disabled', "true");;
+                $('#validuser').val("please login");
+
+                auth.click(ForgeAuthorize);
+                 
+            }
+        }
+    };
+    xmlhttp.onerror = xmlHttpRequestErrorHandler;
+    xmlhttp.withCredentials = true;
+    xmlhttp.send();
+}
+
+ $(document).ready(function () {
+
+     checkvaliduser();
+
+ });
+
+    var xmlhttp = null;
+    function ForgeAuthorize() {
+
+        xmlhttp = new XMLHttpRequest();
+        xmlhttp.open('GET', '/Home/ForgeAuthorize', true);
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                // From the response string, get the progress.
+                var response = xmlhttp.responseText;
+
+                //alert(response);
+                var jsonObj1 = eval('(' + response + ')');;
+                PopupCenter(jsonObj1.authorizeurl, "Autodesk Login", 800, 400);
+            }
+        };
+        xmlhttp.onerror = xmlHttpRequestErrorHandler;
+        xmlhttp.withCredentials = true;
+        xmlhttp.send(); 
+    }
+
+
+
+    //for test
+    function Get3LeggedToken() {
+
+        xmlhttp = new XMLHttpRequest();
+        xmlhttp.open('GET', 'forgecallback?code=qHaGAEa6GI3jbifCR-iKwHXbWouLvnd9GlTLWhAl', true);
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                // From the response string, get the progress.
+                var response = xmlhttp.responseText;
+
+                //alert(response);
+                var jsonObj1 = eval('(' + response + ')');;
+                alert(jsonObj1.mycode);
+             }
+        };
+        xmlhttp.onerror = xmlHttpRequestErrorHandler;
+        xmlhttp.withCredentials = true;
+        xmlhttp.send(); 
+
+    }
+
+    function xmlHttpRequestErrorHandler() {
+        // Reset busy indicator
+        console.log(xmlhttp.responseText);
+    }
+
+    function PopupCenter(url, title, w, h) {
+        // Fixes dual-screen position                         Most browsers      Firefox
+        var dualScreenLeft = window.screenLeft != undefined ? window.screenLeft : screen.left;
+        var dualScreenTop = window.screenTop != undefined ? window.screenTop : screen.top;
+
+        var width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
+        var height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+
+        var left = ((width / 2) - (w / 2)) + dualScreenLeft;
+        var top = ((height / 2) - (h / 2)) + dualScreenTop;
+        var newWindow = window.open(url, title, 'scrollbars=yes, width=' + w + ', height=' + h + ', top=' + top + ', left=' + left);
+
+        // Puts focus on the newWindow
+        if (window.focus) {
+            newWindow.focus();
+        }
+    }
+</script>

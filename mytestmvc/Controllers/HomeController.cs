@@ -1,4 +1,4 @@
-﻿using RestSharp;
+using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,7 +39,7 @@ namespace mytestmvc.Controllers
         // This is the mo_file information for the BIM 360 Glue Model
         public string UserId { get; set; }
         public string AppId { get; set; }
-        public string IsValid { get; set; }
+        public bool IsValid { get; set; }
     }
     public class HomeController : Controller
     {
@@ -181,17 +181,15 @@ namespace mytestmvc.Controllers
             {
 
                 string responseString = httpresult.Content;
-                int len = responseString.Length;
-                int index = responseString.IndexOf("\"IsValid\":\"") + "\"IsValid\":\"".Length;
-                responseString = responseString.Substring(index, len - index - 1);
-                int index2 = responseString.IndexOf("\"");
-                bool _isvalid = Convert.ToBoolean(responseString.Substring(0, index2));
 
-                Session["currentuserid"] = userid;
-                Session["currentuservalid"] = _isvalid;
+                JavaScriptSerializer json_serializer = new JavaScriptSerializer();
+
+                entitlement_response jsonObj = (entitlement_response)json_serializer.DeserializeObject(responseString);
+
+                Session["currentuserid"] = jsonObj.IsValid; 
 
 
-                return _isvalid;
+                return jsonObj.IsValid;
                 //result = Json(new { access_token = _accessToken }, JsonRequestBehavior.AllowGet); ;
 
             }

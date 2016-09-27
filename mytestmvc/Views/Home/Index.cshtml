@@ -1,11 +1,19 @@
-﻿@model mytestmvc.Models.MyModels 
+@model mytestmvc.Models.MyModels 
 
 <script type="text/javascript" src="../Scripts/jquery-1.10.2.min.js"></script>
 @using (Html.BeginForm())
 {
 <div>  
     <p>
-        <input type="button" id="btnAuthorize" value="ForgeAuthorize" onclick="ForgeAuthorize()" style="border-radius: 10px;background-color:cyan" />
+        <input type="button" id="btnLogin" value="Login" onclick="Login()" style="border-radius: 10px;background-color:cyan" />
+    </p> 
+
+    <p>
+        <input type="button" id="btnLogout" value="Logout" onclick="Logout()" style="border-radius: 10px;background-color:cyan" />
+    </p> 
+
+    <p>
+        <input type="button" value="Test" onclick="Test()" style="border-radius: 10px;background-color:cyan" />
     </p> 
 
     <p>
@@ -22,11 +30,19 @@
 
 <script>
 
+    function Test()
+    {
+        window.localStorage.clear();
+         
+
+    }
 function checkvaliduser()
-{
-        
+{        
     xmlhttp = new XMLHttpRequest();
     xmlhttp.open('GET', '/Home/checkuservalid', true);
+
+    xmlhttp.setRequestHeader('Access-Control-Allow-Origin', '*');
+
     xmlhttp.onreadystatechange = function () {
         if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
             // From the response string, get the progress.
@@ -40,13 +56,12 @@ function checkvaliduser()
                 $('#validuser').val(jsonObj1.currentuseremail);
             }
             else {
-                var auth = $("#btnAuthorize");
-
+                var auth = $("#btnLogin");
 
                 $('#btncando').attr('disabled', "true");;
                 $('#validuser').val("please login");
 
-                auth.click(ForgeAuthorize);
+                auth.click(Login);
                  
             }
         }
@@ -63,10 +78,12 @@ function checkvaliduser()
  });
 
     var xmlhttp = null;
-    function ForgeAuthorize() {
+    function Login() {
 
         xmlhttp = new XMLHttpRequest();
-        xmlhttp.open('GET', '/Home/ForgeAuthorize', true);
+        xmlhttp.open('GET', '/Home/ForgeLogin', true);
+
+        xmlhttp.setRequestHeader('Access-Control-Allow-Origin', '*');
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                 // From the response string, get the progress.
@@ -74,12 +91,35 @@ function checkvaliduser()
 
                 //alert(response);
                 var jsonObj1 = eval('(' + response + ')');;
-                PopupCenter(jsonObj1.authorizeurl, "Autodesk Login", 800, 400);
+                //PopupCenter(jsonObj1.authorizeurl, "Autodesk Login", 800, 400);
+                location.href = jsonObj1.authorizeurl;
+
             }
         };
         xmlhttp.onerror = xmlHttpRequestErrorHandler;
         xmlhttp.withCredentials = true;
         xmlhttp.send(); 
+    }
+
+    function Logout() {
+
+        xmlhttp = new XMLHttpRequest();
+        xmlhttp.open('POST', '/Home/ForgeLogout', true);
+
+        xmlhttp.setRequestHeader('Access-Control-Allow-Origin', '*');
+
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                $('#btncando').attr('disabled', "true");;
+                $('#validuser').val("please login");
+                window.location.reload();
+            }
+        };
+        xmlhttp.onerror = xmlHttpRequestErrorHandler;
+        xmlhttp.withCredentials = true;
+        xmlhttp.send();
+
+      
     }
 
 

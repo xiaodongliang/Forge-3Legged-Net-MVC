@@ -86,135 +86,123 @@ namespace mytestmvc.Controllers
         [HttpGet]
         public ActionResult callback(string code)
         {
-            ActionResult result = null;
-            
-            RestClient _client = new RestClient(forgeBaseUrl);
+          ActionResult result = null;
 
-            RestRequest authReq = new RestRequest();
-            authReq.Resource = "authentication/v1/gettoken";
-            authReq.Method = Method.POST;
-            authReq.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+            //**********************
+            //this cannot work
+            //RestClient _client = new RestClient(forgeBaseUrl);
+            //RestRequest authReq = new RestRequest();
+            //authReq.Resource = "authentication/v1/gettoken";
+            //authReq.Method = Method.POST;
+            //authReq.AddHeader("Content-Type", "application/x-www-form-urlencoded");
 
-            authReq.AddParameter("client_id", clientId);
-            authReq.AddParameter("client_secret", clientSecret);
-            authReq.AddParameter("grant_type", "authorization_code");
-            authReq.AddParameter("redirect_uri", HttpUtility.UrlEncode(callbackUrl));
-            authReq.AddParameter("code", HttpUtility.UrlEncode(code));
+            //authReq.AddParameter("code", code);
+            //authReq.AddParameter("grant_type", "authorization_code");
+            //authReq.AddParameter("redirect_uri", HttpUtility.UrlEncode(callbackUrl));
+            ////authReq.AddParameter("redirect_uri", callbackUrl);
+            //authReq.AddParameter("client_id", clientId);
+            //authReq.AddParameter("client_secret", clientSecret);
+            //IRestResponse httpresult = _client.Execute(authReq);
+            //**********************
 
-            IRestResponse httpresult = _client.Execute(authReq);
-            if (httpresult.StatusCode == System.Net.HttpStatusCode.OK)
-            {                 
-                string responseString = httpresult.Content;
-                JavaScriptSerializer json_serializer = new JavaScriptSerializer();
+            var client = new RestClient(forgeBaseUrl+ "authentication/v1/gettoken");
+            var request = new RestRequest(Method.POST);
+            string encodedBody = string.Format("code={0}&grant_type=authorization_code&client_id={1}&client_secret={2}&redirect_uri={3}",
+                code, clientId, clientSecret, HttpUtility.UrlEncode(callbackUrl));
+            request.AddParameter("application/x-www-form-urlencoded", encodedBody, ParameterType.RequestBody);
+            request.AddParameter("Content-Type", "application/x-www-form-urlencoded", ParameterType.HttpHeader);
+            var response = client.Execute<gettoken_response>(request);
 
-                gettoken_response jsonObj = (gettoken_response)json_serializer.DeserializeObject(responseString);
+            if(response.StatusCode == System.Net.HttpStatusCode.OK)
+            { 
 
-                //string userid = AtMe(jsonObj.access_token);
-                //string appid = "";
-                //if (userid != "error")
-                //{
-                //bool isvaliduser = CheckEntitlement(userid, appid);
-                // }
-                // else
-                // {
+                string userid = AtMe(response.Data.access_token);
+                userid = "9FBPMRCHFRS5";
+                string appid = "8838710715095167987";
+                if (userid != "error")
+                {
+                    bool isvaliduser = CheckEntitlement(userid, appid);
+                 }
+                else
+                {
 
-                // }
-
-
+                }
+                //result = Content(userid);
             }
             else
-            {
-                //just for test
-                Session["currentuseremail"] = httpresult.Content  + " " + code;
-                Session["currentuservalid"] = true;                 
-            }
-             
-
-            result = Content("<script>window.opener.location.reload(false);window.close();</script>");
+            { 
+            } 
+            //result = Content("<script>window.opener.location.reload(false);window.close();</script>");
+            result = Redirect("\\");
             return result;
         }
          
         string AtMe(string access_token)
         {
-            RestClient _client = new RestClient(forgeBaseUrl);
-
-            RestRequest authReq = new RestRequest();
-            authReq.Resource = "userprofile/v1/users/@me";
-            authReq.Method = Method.GET;
-            authReq.AddHeader("Authorization", "Bearer " + access_token);
-
-            IRestResponse httpresult = _client.Execute(authReq);
-            if (httpresult.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                string responseString = httpresult.Content;
-                JavaScriptSerializer json_serializer = new JavaScriptSerializer();
-
-                atme_response jsonObj = (atme_response)json_serializer.DeserializeObject(responseString);
-
-                string _userId = jsonObj.userId;
-                string _useremail = jsonObj.emailId;
+            var client = new RestClient(forgeBaseUrl + "userprofile/v1/users/@me");
+            var request = new RestRequest(Method.GET);           
+            request.AddParameter("Authorization", "Bearer " + access_token, ParameterType.HttpHeader);
+            var response = client.Execute<atme_response>(request);
+             
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            { 
+                string _userId = response.Data.userId;
+                string _useremail = response.Data.emailId;
 
                 Session["currentuserid"] = _userId;
                 Session["currentuseremail"] = _useremail;
 
-                return _userId; 
+                return _userId + " " + _useremail; 
             }
             else
             {
+                Session["currentuseremail"] = "please log in";
+
                 return "error";
              }
-
         }
 
         bool CheckEntitlement(string userid, string appid)
         {
-            RestClient _client = new RestClient("https://apps.autodesk.com/");
+            var client = new RestClient("https://apps.autodesk.com/" + "webservices/checkentitlement");
+            var request = new RestRequest(Method.GET);
+            request.AddParameter("userid", userid);
+            request.AddParameter("appid", appid);
 
-            RestRequest authReq = new RestRequest();
-            authReq.Resource = "webservices/checkentitlement";
-            authReq.Method = Method.GET;
-            authReq.AddParameter("userid", userid);
-            authReq.AddParameter("appid", appid);
-
-            IRestResponse httpresult = _client.Execute(authReq);
-            if (httpresult.StatusCode == System.Net.HttpStatusCode.OK)
+            var response = client.Execute<entitlement_response>(request);
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-
-                string responseString = httpresult.Content;
-
-                JavaScriptSerializer json_serializer = new JavaScriptSerializer();
-
-                entitlement_response jsonObj = (entitlement_response)json_serializer.DeserializeObject(responseString);
-
-                Session["currentuserid"] = jsonObj.IsValid; 
-
-
-                return jsonObj.IsValid;
-                //result = Json(new { access_token = _accessToken }, JsonRequestBehavior.AllowGet); ;
+                //((sessionJson)Session[unique_id]).currentuservalid = response.Data.IsValid; 
+                  
+                return response.Data.IsValid;
 
             }
             else
             {
-                return false; ;
-                //result = Json(new { error = httpresult.StatusCode.ToString() }, JsonRequestBehavior.AllowGet); ;
-            }
-
+                return false;
+            } 
         }
 
 
 
         [HttpGet]
-        public ActionResult checkuservalid()
+        public ActionResult checkuservalid(string unique_id)
         {
             ActionResult result = null;
 
+            if(Session[unique_id] == null)
+            {
+                Session[unique_id] = new sessionJson();
+                
+            }
+
             result = Json(new
             {
-                currentuseremail = Session["currentuseremail"],
-                currentuserid = Session["currentuserid"],
-                currentuservalid = Session["currentuservalid"]
+                currentuseremail = ((sessionJson)Session[unique_id]).currentuseremail,
+                currentuserid = ((sessionJson)Session[unique_id]).currentuserid,
+                currentuservalid = ((sessionJson)Session[unique_id]).currentuservalid
             },
-            JsonRequestBehavior.AllowGet);
+               JsonRequestBehavior.AllowGet);
 
             return result;
         }
@@ -238,6 +226,13 @@ namespace mytestmvc.Controllers
             //Session["currentuservalid"] = false;
 
             return View();
+        }
+        
+         [HttpPost]
+        public ActionResult ForgeLogout()
+        { 
+            //doing...
+            return Content("ok"); 
         }
 
         public ActionResult About()
